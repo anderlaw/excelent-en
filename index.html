@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>精诚英语馆</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/style.css" />
+    <style>
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .video-list{
+        height:calc(100% - 70px);
+        overflow-y: scroll;
+      }
+      .video-item {
+        color: #353535;
+        text-decoration: none;
+        display: block;
+        padding: 12px 16px;
+        box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+        border-radius: 8px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+      .video-item .title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #353535;
+        padding-bottom: 6px;
+      }
+      .video-item .date {
+        color: #9a9a9a;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <div class="nav">
+        <a href="./index.html" class="item logo">
+          <img src="./assets/logo.png" alt="" />
+        </a>
+        <a href="./about.html" class="item">关于</a>
+      </div>
+      <div class="video-list"></div>
+    </div>
+    <script src="./index.js"></script>
+    <script>
+      function getVideoList() {
+        ajax({
+          url: "/video-list",
+          callback: function(res) {
+            renderHtml(res);
+          }
+        });
+      }
+      function renderHtml(arr) {
+        var resStr = "";
+        var parent = document.querySelector(".video-list");
+        arr.forEach(function(item) {
+          resStr +=
+            '<a class="video-item" href="./video.html?id=' +
+            item.id +
+            '">\
+          <div class="title">' +
+            item.title +
+            '</div>\
+          <div class="desc">' +
+            item.description +
+            '</div>\
+          <div class="date">发布于：' +
+            new Date(item.createDate).toLocaleDateString() +
+            "</div></a>";
+        });
+        parent.innerHTML = resStr;
+      }
+      //start
+      getVideoList();
+    </script>
+  </body>
+</html>

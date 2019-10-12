@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>精诚英语馆</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/style.css" />
+    <style>
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .video-section {
+        height: calc(100% - 70px);
+        overflow: hidden;
+      }
+      .video-section .title {
+        font-size: 18px;
+        height: 30px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #e5e5e5;
+
+        line-height: 30px;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+      .video-section .desc {
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 4px 6px;
+        color: #828080;
+        border: 2px dashed #ccc;
+      }
+      .video-section .video-box {
+        float: left;
+        width: 48%;
+        display: inline-block;
+      }
+      .video-section .srt-box {
+        float: right;
+        width: calc(52% - 20px);
+        height: calc(100% - 40px);
+        box-sizing: border-box;
+        padding: 10px 8px;
+        overflow-y: scroll;
+        display: inline-block;
+        line-height: 1.8;
+      }
+      .srt-box .en {
+        color: #6d6d6d;
+        cursor: pointer;
+      }
+      .srt-box .en:hover {
+        background-color: #eee;
+      }
+      .srt-box .cn {
+        color: #a0a0a0;
+      }
+      .srt-item {
+        padding-bottom: 10px;
+      }
+      .srt-item.active .en,
+      .srt-item.active .cn {
+        color: #1162ce;
+      }
+      /* 媒体查询 */
+      @media screen and (max-width: 600px) {
+        .video-section .desc{
+          display: none;
+        }
+        .video-section video{
+          height: 190px;
+          display: inline-block;
+        }
+        .video-section .video-box {
+          width: 100%;
+          display: inline-block;
+        }
+        .video-section .srt-box {
+          width: 100%;
+          height: calc(100% - 250px);
+          box-sizing: border-box;
+          padding: 10px 8px;
+          overflow-y: scroll;
+          display: inline-block;
+          line-height: 1.8;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <div class="nav">
+        <a href="./index.html" class="item logo">
+          <img src="./assets/logo.png" alt="" />
+        </a>
+        <a href="./about.html" class="item">关于</a>
+      </div>
+      <div class="video-section">
+        <div class="title"></div>
+        <div class="video-box">
+          <video playsinline="" webkit-playsinline=""  src="" controls="controls"></video>
+          <div class="desc"></div>
+          <div style="height:20px;">
+            <input id="chk-cn" type="checkbox" />
+            <label for="chk-cn">自动跟屏</label>
+          </div>
+        </div>
+        <div class="srt-box"></div>
+      </div>
+    </div>
+    <script src="./index.js"></script>
+    <script>
+      var timer = null;
+      var video = document.querySelector(".video-box video");
+      getVideo();
+      addSrtClick();
+      monitorTiming();
+      monitorFollow();
+      function getVideo() {
+        var id = location.search.split("id=")[1].trim();
+        ajax({
+          url: "/video-detail",
+          params: {
+            id: id
+          },
+          callback: function(res) {
+            renderPage(res[0]);
+            // var src = res[0].video;
+            // document.querySelector('video').src = src;
+          }
+        });
+      }
+      function renderPage(data) {
+        console.log(data);
+        document.querySelector(".video-section .title").innerText = data.title;
+        document.querySelector(".video-section .desc").innerText =
+          data.description;
+        document.querySelector(".video-box video").src = data.video;
+        var srt = JSON.parse(data.srt);
+        var htmlStr = "";
+        srt.forEach(function(item) {
+          htmlStr +=
+            '<div class="srt-item">\
+            <div class="en" data-time="' +
+            item.time +
+            '">' +
+            item.en +
+            '</div>\
+            <div class="cn">' +
+            (item.cn || "") +
+            "</div>\
+          </div>";
+        });
+        document.querySelector(".srt-box").innerHTML = htmlStr;
+      }
+      function addSrtClick() {
+        document.querySelector(".srt-box").onclick = function(ev) {
+          var target = ev.target;
+          var time = target.dataset.time;
+          var className = target.className;
+          if (className === "en") {
+            //点击了英文字幕。
+            if (time !== "" && time !== void 0) seekVideo(time);
+          }
+          console.log(target);
+        };
+      }
+      function monitorTiming() {
+        video.ontimeupdate = function(ev) {
+          var currentTime = video.currentTime;
+          hightCurrentSrt(currentTime);
+          //1.处理滚动距离
+          //2.添加字幕高亮
+        };
+      }
+      function seekVideo(time) {
+        video.currentTime = time;
+        video.play();
+      }
+      function hightCurrentSrt(currentTime) {
+        var srts = document.querySelectorAll(".srt-box .en");
+
+        //将第一个的高亮去除。
+        srts[0].parentNode.classList.remove("active");
+        for (var i = 1; i < srts.length; i++) {
+          var preTime = srts[i - 1].dataset.time;
+          var curTime = srts[i].dataset.time;
+          //移除每个高亮。
+          srts[i].parentNode.classList.remove("active");
+          if (currentTime >= preTime && currentTime < curTime) {
+            srts[i - 1].parentNode.classList.add("active");
+          }
+        }
+      }
+      function autoFit() {
+        var totalDis = 0;
+        var activeEle = document.querySelector(".srt-item.active");
+
+        var srtItems = document.querySelectorAll(".srt-item");
+
+        for (var i = 0; i < srtItems.length; i++) {
+          if (srtItems[i] === activeEle) {
+            break;
+            return;
+          }
+          totalDis += srtItems[i].offsetHeight;
+        }
+        // console.log(totalDis)
+        document.querySelector(".srt-box").scrollTo({
+          top: totalDis,
+          behavior: "smooth"
+        });
+      }
+
+      function openAutoFollow() {
+        clearInterval(timer);
+        timer = setInterval(function() {
+          autoFit();
+        }, 4000);
+      }
+      function monitorFollow() {
+        var chk = document.querySelector("#chk-cn");
+        chk.onchange = function() {
+          console.log(chk.checked);
+          if (chk.checked) {
+            //勾选，跟屏
+            openAutoFollow();
+          } else {
+            //取消跟屏
+            clearInterval(timer);
+          }
+        };
+      }
+    </script>
+  </body>
+</html>
